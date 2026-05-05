@@ -72,8 +72,8 @@ module.exports = async function handler(req, res) {
     return res.status(404).json({ error: 'Endpoint introuvable. Utilisez GET /v1/bien?adresse=...' });
   }
 
-  // Auth
-  const authError = checkApiKey(req);
+  // Auth (async — vérifie la DB Supabase en production, env var en dev)
+  const authError = await checkApiKey(req);
   if (authError) return res.status(authError.status).json(authError);
 
   // Rate limiting

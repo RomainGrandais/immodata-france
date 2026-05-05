@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — ImmoData France</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --border:    #30363d;
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --accent:    #2563eb;
+      --accent-h:  #1d4ed8;
+      --green:     #238636;
+      --red:       #da3633;
+      --gold:      #d29922;
+      --radius:    8px;
+      --font:      -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    }
+
+    body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
+
+    /* ── Nav ── */
+    nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+    }
+    .logo { font-weight: 700; font-size: 1.1rem; color: var(--text); text-decoration: none; }
+    .logo span { color: var(--accent); }
+    .nav-right { display: flex; gap: .75rem; align-items: center; }
+    #user-email { color: var(--muted); font-size: .875rem; }
+
+    /* ── Layout ── */
+    .container { max-width: 860px; margin: 0 auto; padding: 2rem 1.25rem; }
+    .section { margin-bottom: 2.5rem; }
+    h2 { font-size: 1.15rem; font-weight: 600; margin-bottom: 1rem; padding-bottom: .5rem; border-bottom: 1px solid var(--border); }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin-bottom: .75rem;
+    }
+    .card-row { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+
+    /* ── Plan badge ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .3rem;
+      font-size: .75rem;
+      font-weight: 600;
+      padding: .2rem .6rem;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .badge-free     { background: #21262d; color: var(--muted); border: 1px solid var(--border); }
+    .badge-starter  { background: #1f3b6b; color: #79b8ff;    border: 1px solid #388bfd44; }
+    .badge-pro      { background: #3d2e00; color: #e3b341;    border: 1px solid #d29922aa; }
+
+    /* ── Stat boxes ── */
+    .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: .75rem; margin-bottom: 1rem; }
+    .stat-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; }
+    .stat-box .val { font-size: 1.5rem; font-weight: 700; }
+    .stat-box .lbl { font-size: .75rem; color: var(--muted); margin-top: .2rem; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: .35rem;
+      padding: .45rem 1rem; border-radius: var(--radius); border: none;
+      cursor: pointer; font-size: .875rem; font-weight: 500;
+      text-decoration: none; transition: opacity .15s;
+    }
+    .btn:hover { opacity: .85; }
+    .btn-primary   { background: var(--accent); color: #fff; }
+    .btn-success   { background: var(--green); color: #fff; }
+    .btn-danger    { background: transparent; color: var(--red); border: 1px solid var(--red); }
+    .btn-muted     { background: #21262d; color: var(--text); border: 1px solid var(--border); }
+    .btn-gold      { background: var(--gold); color: #000; }
+    .btn-sm        { padding: .3rem .7rem; font-size: .8rem; }
+
+    /* ── Key card ── */
+    .key-card { display: flex; flex-direction: column; gap: .6rem; }
+    .key-name  { font-weight: 600; }
+    .key-val   {
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: .8rem;
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: .4rem .7rem;
+      display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+      word-break: break-all;
+    }
+    .key-meta { font-size: .8rem; color: var(--muted); display: flex; gap: 1rem; flex-wrap: wrap; }
+
+    /* ── New key reveal ── */
+    .reveal-box {
+      background: #0d2414;
+      border: 1px solid #238636;
+      border-radius: var(--radius);
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    .reveal-box p { font-size: .875rem; margin-bottom: .5rem; }
+    .reveal-box strong { color: #3fb950; }
+
+    /* ── Forms ── */
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; font-size: .875rem; margin-bottom: .35rem; color: var(--muted); }
+    input[type=text], input[type=email], input[type=password] {
+      width: 100%; padding: .55rem .75rem;
+      background: #0d1117; border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text); font-size: .9rem;
+    }
+    input:focus { outline: none; border-color: var(--accent); }
+
+    /* ── Auth container ── */
+    .auth-wrap {
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; padding: 1.5rem;
+    }
+    .auth-box {
+      width: 100%; max-width: 400px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 2rem;
+    }
+    .auth-title { font-size: 1.4rem; font-weight: 700; margin-bottom: .4rem; text-align: center; }
+    .auth-sub   { color: var(--muted); font-size: .875rem; text-align: center; margin-bottom: 1.5rem; }
+    .auth-tabs  { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
+    .auth-tab   {
+      flex: 1; padding: .6rem; text-align: center; cursor: pointer;
+      font-size: .875rem; font-weight: 500; color: var(--muted);
+      border-bottom: 2px solid transparent; transition: all .15s;
+    }
+    .auth-tab.active { color: var(--accent); border-color: var(--accent); }
+
+    /* ── Pricing ── */
+    .pricing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+    .pricing-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.25rem;
+      display: flex; flex-direction: column; gap: .6rem;
+    }
+    .pricing-card.recommended { border-color: var(--accent); }
+    .price-big { font-size: 2rem; font-weight: 800; }
+    .price-sub { font-size: .8rem; color: var(--muted); }
+    .feature-list { list-style: none; padding: 0; font-size: .85rem; display: flex; flex-direction: column; gap: .4rem; }
+    .feature-list li::before { content: '✓ '; color: var(--green); font-weight: 700; }
+    .current-plan-tag { font-size: .75rem; color: var(--accent); font-weight: 600; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem;
+      background: #238636; color: #fff;
+      padding: .75rem 1.25rem; border-radius: var(--radius);
+      font-size: .875rem; opacity: 0;
+      transform: translateY(10px);
+      transition: all .25s;
+      pointer-events: none;
+      z-index: 9999;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.error { background: var(--red); }
+
+    /* ── Alert ── */
+    .alert { padding: .75rem 1rem; border-radius: var(--radius); font-size: .875rem; margin-bottom: 1rem; }
+    .alert-danger  { background: #3d0c0c; border: 1px solid var(--red);  color: #ff7b72; }
+    .alert-success { background: #0d2414; border: 1px solid var(--green); color: #3fb950; }
+
+    /* ── Utils ── */
+    .hidden { display: none !important; }
+    .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .5rem; }
+    .mt-1 { margin-top: .5rem; }
+    .text-muted { color: var(--muted); }
+    .text-sm { font-size: .8rem; }
+    .mono { font-family: 'SFMono-Regular', Consolas, monospace; }
+  </style>
+</head>
+<body>
+
+<!-- ── Toast ──────────────────────────────────────────────────────────────── -->
+<div id="toast"></div>
+
+<!-- ── Auth screen ─────────────────────────────────────────────────────────── -->
+<div id="auth-screen" class="auth-wrap">
+  <div class="auth-box">
+    <div class="auth-title">🏠 ImmoData France</div>
+    <div class="auth-sub">Accédez à votre dashboard API</div>
+
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchTab('login')">Connexion</div>
+      <div class="auth-tab" onclick="switchTab('register')">Inscription</div>
+    </div>
+
+    <div id="auth-alert" class="alert alert-danger hidden"></div>
+
+    <!-- Login -->
+    <form id="login-form" onsubmit="doLogin(event)">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="vous@exemple.com" required />
+      </div>
+      <div class="form-group">
+        <label>Mot de passe</label>
+        <input type="password" id="login-password" placeholder="••••••••" required />
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%">Se connecter</button>
+    </form>
+
+    <!-- Register -->
+    <form id="register-form" class="hidden" onsubmit="doRegister(event)">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="reg-email" placeholder="vous@exemple.com" required />
+      </div>
+      <div class="form-group">
+        <label>Mot de passe <span class="text-muted">(8 caractères minimum)</span></label>
+        <input type="password" id="reg-password" placeholder="••••••••" minlength="8" required />
+      </div>
+      <button type="submit" class="btn btn-success" style="width:100%">Créer mon compte gratuit</button>
+      <p class="text-muted text-sm mt-1" style="text-align:center">
+        Plan gratuit inclus — 100 requêtes/jour, sans carte bancaire.
+      </p>
+    </form>
+  </div>
+</div>
+
+<!-- ── Dashboard ───────────────────────────────────────────────────────────── -->
+<div id="dashboard" class="hidden">
+  <nav>
+    <a href="/docs" class="logo">Immo<span>Data</span></a>
+    <div class="nav-right">
+      <span id="user-email"></span>
+      <button class="btn btn-muted btn-sm" onclick="doLogout()">Déconnexion</button>
+    </div>
+  </nav>
+
+  <div class="container">
+
+    <!-- ── Nouveau message succès Stripe ── -->
+    <div id="stripe-success" class="alert alert-success hidden">
+      🎉 Paiement confirmé ! Votre plan a été mis à jour. Vos clés existantes ont déjà les nouveaux droits.
+    </div>
+
+    <!-- ── Plan actuel ── -->
+    <div class="section">
+      <h2>Mon abonnement</h2>
+      <div class="card">
+        <div class="flex-between">
+          <div>
+            <div class="card-row" style="margin-bottom:.5rem">
+              <span id="plan-badge" class="badge badge-free">Free</span>
+              <span id="plan-status" class="text-muted text-sm"></span>
+            </div>
+            <div class="stats" style="margin-bottom:0">
+              <div class="stat-box">
+                <div class="val" id="stat-limit">100</div>
+                <div class="lbl">Requêtes / jour</div>
+              </div>
+              <div class="stat-box">
+                <div class="val" id="stat-used">0</div>
+                <div class="lbl">Utilisées aujourd'hui</div>
+              </div>
+              <div class="stat-box">
+                <div class="val" id="stat-total">0</div>
+                <div class="lbl">Total historique</div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:.5rem;align-items:flex-end">
+            <button id="btn-portal" class="btn btn-muted btn-sm hidden" onclick="openPortal()">
+              Gérer l'abonnement
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Clés API ── -->
+    <div class="section">
+      <div class="flex-between" style="margin-bottom:1rem">
+        <h2 style="margin:0;border:none;padding:0">Clés API</h2>
+        <button class="btn btn-primary btn-sm" onclick="showCreateKey()">＋ Nouvelle clé</button>
+      </div>
+
+      <!-- Formulaire création -->
+      <div id="create-form" class="card hidden">
+        <form onsubmit="doCreateKey(event)">
+          <div class="form-group">
+            <label>Nom de la clé <span class="text-muted">(optionnel)</span></label>
+            <input type="text" id="key-name-input" placeholder="ex: Production, Tests…" maxlength="50" />
+          </div>
+          <div style="display:flex;gap:.5rem">
+            <button type="submit" class="btn btn-success">Générer</button>
+            <button type="button" class="btn btn-muted" onclick="hideCreateKey()">Annuler</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Clé nouvellement créée -->
+      <div id="new-key-reveal" class="reveal-box hidden">
+        <p>⚠️ <strong>Copiez cette clé maintenant</strong> — elle ne sera plus affichée.</p>
+        <div class="key-val">
+          <span id="new-key-value" class="mono"></span>
+          <button class="btn btn-muted btn-sm" onclick="copyKey('new-key-value', this)">Copier</button>
+        </div>
+      </div>
+
+      <!-- Liste des clés -->
+      <div id="keys-list"></div>
+      <div id="no-keys" class="text-muted text-sm hidden" style="padding:.5rem 0">
+        Aucune clé active. Créez-en une pour commencer.
+      </div>
+    </div>
+
+    <!-- ── Tarifs & upgrade ── -->
+    <div class="section">
+      <h2>Plans & tarifs</h2>
+      <div class="pricing-grid">
+
+        <!-- Free -->
+        <div class="pricing-card" id="plan-free-card">
+          <div>
+            <span class="badge badge-free">Free</span>
+            <span id="current-free" class="current-plan-tag hidden"> ← votre plan</span>
+          </div>
+          <div><span class="price-big">0€</span><span class="price-sub">/mois</span></div>
+          <ul class="feature-list">
+            <li>100 requêtes / jour</li>
+            <li>1 clé API</li>
+            <li>BAN + DVF + DPE + INSEE</li>
+            <li>Format raw uniquement</li>
+          </ul>
+          <div style="margin-top:auto;padding-top:.5rem">
+            <span class="text-muted text-sm">Votre plan actuel</span>
+          </div>
+        </div>
+
+        <!-- Starter -->
+        <div class="pricing-card recommended" id="plan-starter-card">
+          <div>
+            <span class="badge badge-starter">Starter</span>
+            <span id="current-starter" class="current-plan-tag hidden"> ← votre plan</span>
+          </div>
+          <div><span class="price-big">9€</span><span class="price-sub">/mois</span></div>
+          <ul class="feature-list">
+            <li>1 000 requêtes / jour</li>
+            <li>3 clés API</li>
+            <li>Résumé IA (Claude Haiku)</li>
+            <li>Support par email</li>
+          </ul>
+          <button id="btn-upgrade-starter" class="btn btn-primary" style="margin-top:auto"
+            onclick="upgradePlan('starter')">
+            Passer au Starter
+          </button>
+        </div>
+
+        <!-- Pro -->
+        <div class="pricing-card" id="plan-pro-card">
+          <div>
+            <span class="badge badge-pro">Pro</span>
+            <span id="current-pro" class="current-plan-tag hidden"> ← votre plan</span>
+          </div>
+          <div><span class="price-big">29€</span><span class="price-sub">/mois</span></div>
+          <ul class="feature-list">
+            <li>10 000 requêtes / jour</li>
+            <li>10 clés API</li>
+            <li>Résumé IA prioritaire</li>
+            <li>SLA 99,9%</li>
+            <li>Support prioritaire</li>
+          </ul>
+          <button id="btn-upgrade-pro" class="btn btn-gold" style="margin-top:auto"
+            onclick="upgradePlan('pro')">
+            Passer au Pro
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Code snippet ── -->
+    <div class="section">
+      <h2>Intégration rapide</h2>
+      <div class="card">
+        <p class="text-muted text-sm" style="margin-bottom:.75rem">
+          Remplacez <code style="color:#79b8ff">VOTRE_CLE</code> par votre clé API :
+        </p>
+        <pre style="background:#0d1117;border:1px solid var(--border);border-radius:4px;padding:1rem;overflow-x:auto;font-size:.8rem;line-height:1.5"><code>curl "https://immodata-france.vercel.app/v1/bien?adresse=12+rue+de+la+Paix+Paris" \
+  -H "x-api-key: VOTRE_CLE"</code></pre>
+        <p class="text-muted text-sm" style="margin-top:.75rem">
+          📄 <a href="/docs" style="color:var(--accent)">Documentation complète</a> ·
+          📡 <a href="/openapi.json" style="color:var(--accent)">OpenAPI spec</a>
+        </p>
+      </div>
+    </div>
+
+  </div><!-- /container -->
+</div><!-- /dashboard -->
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────────
+const API_BASE = '';  // même domaine
+const SUPABASE_URL = 'https://djuoclalgcqhvfesrztm.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_mHK21PFMF7azZ0P8tJBm6A_BONd5Xkm';
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentToken = null;
+let currentUser  = null;
+let userData     = null;
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function toast(msg, isError = false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show' + (isError ? ' error' : '');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.className = ''; }, 3000);
+}
+
+function showAuth() {
+  document.getElementById('auth-screen').classList.remove('hidden');
+  document.getElementById('dashboard').classList.add('hidden');
+}
+
+function showDashboard() {
+  document.getElementById('auth-screen').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0) === (tab === 'login'));
+  });
+  document.getElementById('login-form').classList.toggle('hidden', tab !== 'login');
+  document.getElementById('register-form').classList.toggle('hidden', tab !== 'register');
+  document.getElementById('auth-alert').classList.add('hidden');
+}
+
+function authError(msg) {
+  const el = document.getElementById('auth-alert');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+async function doLogin(e) {
+  e.preventDefault();
+  const email    = document.getElementById('login-email').value;
+  const password = document.getElementById('login-password').value;
+
+  const r = await fetch(`${API_BASE}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await r.json();
+  if (!r.ok) return authError(data.error || 'Erreur de connexion.');
+
+  currentToken = data.access_token;
+  currentUser  = data.user;
+  await loadDashboard();
+}
+
+async function doRegister(e) {
+  e.preventDefault();
+  const email    = document.getElementById('reg-email').value;
+  const password = document.getElementById('reg-password').value;
+
+  const r = await fetch(`${API_BASE}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await r.json();
+  if (!r.ok) return authError(data.error || 'Erreur lors de la création du compte.');
+
+  // Auto-login
+  const loginR = await fetch(`${API_BASE}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  if (loginR.ok) {
+    const loginData = await loginR.json();
+    currentToken = loginData.access_token;
+    currentUser  = loginData.user;
+    await loadDashboard();
+  } else {
+    switchTab('login');
+    toast('Compte créé ! Connectez-vous.');
+  }
+}
+
+function doLogout() {
+  currentToken = null;
+  currentUser  = null;
+  userData     = null;
+  localStorage.removeItem('immo_token');
+  showAuth();
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  if (!currentToken) return showAuth();
+
+  localStorage.setItem('immo_token', currentToken);
+
+  const r = await fetch(`${API_BASE}/api/auth/me`, {
+    headers: { 'Authorization': `Bearer ${currentToken}` },
+  });
+  if (!r.ok) { doLogout(); return; }
+
+  userData = await r.json();
+  renderDashboard();
+  showDashboard();
+
+  // Paramètre ?success=true après Stripe
+  const params = new URLSearchParams(location.search);
+  if (params.get('success')) {
+    document.getElementById('stripe-success').classList.remove('hidden');
+    window.history.replaceState({}, '', '/app');
+  }
+}
+
+function renderDashboard() {
+  const { user, subscription, api_keys } = userData;
+
+  // User email
+  document.getElementById('user-email').textContent = user.email;
+
+  // Plan badge
+  const { plan, status, limit_per_day, current_period_end } = subscription;
+  const badge = document.getElementById('plan-badge');
+  badge.textContent = plan.charAt(0).toUpperCase() + plan.slice(1);
+  badge.className = `badge badge-${plan}`;
+
+  const statusEl = document.getElementById('plan-status');
+  if (plan !== 'free') {
+    const end = current_period_end ? new Date(current_period_end).toLocaleDateString('fr-FR') : '';
+    statusEl.textContent = `${status === 'active' ? '✓ Actif' : status}${end ? ' · renouvellement ' + end : ''}`;
+  } else {
+    statusEl.textContent = '';
+  }
+
+  // Stats
+  const usedToday = (api_keys ?? []).reduce((s, k) => s + (k.requests_today || 0), 0);
+  const totalAll  = (api_keys ?? []).reduce((s, k) => s + (k.requests_total || 0), 0);
+  document.getElementById('stat-limit').textContent = limit_per_day.toLocaleString('fr-FR');
+  document.getElementById('stat-used').textContent  = usedToday.toLocaleString('fr-FR');
+  document.getElementById('stat-total').textContent = totalAll.toLocaleString('fr-FR');
+
+  // Portal button
+  if (plan !== 'free') {
+    document.getElementById('btn-portal').classList.remove('hidden');
+  }
+
+  // Current plan markers & upgrade buttons
+  ['free','starter','pro'].forEach(p => {
+    const tag = document.getElementById(`current-${p}`);
+    if (tag) tag.classList.toggle('hidden', plan !== p);
+  });
+  document.getElementById('btn-upgrade-starter').classList.toggle('hidden', plan === 'starter' || plan === 'pro');
+  document.getElementById('btn-upgrade-pro').classList.toggle('hidden', plan === 'pro');
+
+  // Keys list
+  renderKeys(api_keys ?? []);
+}
+
+function renderKeys(keys) {
+  const list = document.getElementById('keys-list');
+  const noKeys = document.getElementById('no-keys');
+
+  const active = keys.filter(k => k.is_active);
+  if (!active.length) {
+    list.innerHTML = '';
+    noKeys.classList.remove('hidden');
+    return;
+  }
+  noKeys.classList.add('hidden');
+
+  list.innerHTML = active.map(k => `
+    <div class="card key-card" data-id="${k.id}">
+      <div class="flex-between">
+        <span class="key-name">${escHtml(k.name)}</span>
+        <span class="badge badge-${k.plan}">${k.plan}</span>
+      </div>
+      <div class="key-val">
+        <span class="mono">${escHtml(k.key_prefix)}</span>
+        <span class="text-muted text-sm" style="white-space:nowrap">clé masquée</span>
+      </div>
+      <div class="key-meta">
+        <span>Créée le ${new Date(k.created_at).toLocaleDateString('fr-FR')}</span>
+        ${k.last_used_at ? `<span>Dernière utilisation : ${new Date(k.last_used_at).toLocaleDateString('fr-FR')}</span>` : '<span>Jamais utilisée</span>'}
+        <span>Aujourd'hui : ${(k.requests_today||0).toLocaleString('fr-FR')} req</span>
+        <span>Total : ${(k.requests_total||0).toLocaleString('fr-FR')} req</span>
+      </div>
+      <div>
+        <button class="btn btn-danger btn-sm" onclick="revokeKey('${k.id}', this)">
+          Révoquer
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Key creation ──────────────────────────────────────────────────────────────
+function showCreateKey() {
+  document.getElementById('create-form').classList.remove('hidden');
+  document.getElementById('key-name-input').focus();
+  document.getElementById('new-key-reveal').classList.add('hidden');
+}
+function hideCreateKey() {
+  document.getElementById('create-form').classList.add('hidden');
+}
+
+async function doCreateKey(e) {
+  e.preventDefault();
+  const name = document.getElementById('key-name-input').value || 'Ma clé';
+
+  const r = await fetch(`${API_BASE}/api/keys`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${currentToken}`,
+    },
+    body: JSON.stringify({ name }),
+  });
+  const data = await r.json();
+  if (!r.ok) { toast(data.error || 'Erreur', true); return; }
+
+  // Afficher la clé en clair une fois
+  document.getElementById('new-key-value').textContent = data.key;
+  document.getElementById('new-key-reveal').classList.remove('hidden');
+  hideCreateKey();
+
+  // Rafraîchir la liste
+  await loadDashboard();
+  toast('Clé créée ! Copiez-la maintenant.');
+}
+
+async function revokeKey(keyId, btn) {
+  if (!confirm('Révoquer cette clé ? Cette action est irréversible.')) return;
+  btn.disabled = true;
+  btn.textContent = '…';
+
+  const r = await fetch(`${API_BASE}/api/keys/revoke`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${currentToken}`,
+    },
+    body: JSON.stringify({ key_id: keyId }),
+  });
+  const data = await r.json();
+  if (!r.ok) { toast(data.error || 'Erreur', true); btn.disabled = false; btn.textContent = 'Révoquer'; return; }
+
+  toast('Clé révoquée.');
+  await loadDashboard();
+}
+
+async function copyKey(elemId, btn) {
+  const text = document.getElementById(elemId).textContent;
+  await navigator.clipboard.writeText(text);
+  btn.textContent = '✓ Copié';
+  setTimeout(() => { btn.textContent = 'Copier'; }, 2000);
+}
+
+// ── Stripe ────────────────────────────────────────────────────────────────────
+async function upgradePlan(plan) {
+  const r = await fetch(`${API_BASE}/api/stripe/checkout`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${currentToken}`,
+    },
+    body: JSON.stringify({ plan }),
+  });
+  const data = await r.json();
+  if (!r.ok) { toast(data.error || 'Erreur lors de la redirection Stripe.', true); return; }
+  window.location.href = data.url;
+}
+
+async function openPortal() {
+  const r = await fetch(`${API_BASE}/api/stripe/portal`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${currentToken}` },
+  });
+  const data = await r.json();
+  if (!r.ok) { toast(data.error || 'Erreur.', true); return; }
+  window.location.href = data.url;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+(async () => {
+  // Essayer de restaurer la session depuis localStorage
+  const saved = localStorage.getItem('immo_token');
+  if (saved) {
+    currentToken = saved;
+    const r = await fetch(`${API_BASE}/api/auth/me`, {
+      headers: { 'Authorization': `Bearer ${saved}` },
+    });
+    if (r.ok) {
+      userData = await r.json();
+      currentUser = userData.user;
+      renderDashboard();
+      showDashboard();
+
+      const params = new URLSearchParams(location.search);
+      if (params.get('success')) {
+        // Attendre un peu que le webhook Stripe ait mis à jour la DB
+        setTimeout(async () => {
+          await loadDashboard();
+          document.getElementById('stripe-success').classList.remove('hidden');
+          window.history.replaceState({}, '', '/app');
+        }, 2000);
+      }
+      return;
+    }
+    localStorage.removeItem('immo_token');
+  }
+  showAuth();
+})();
+</script>
+</body>
+</html>
