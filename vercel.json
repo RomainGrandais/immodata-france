@@ -1,31 +1,30 @@
 {
   "version": 2,
   "functions": {
-    "api/v1/bien.js": {
-      "maxDuration": 15
-    }
+    "api/v1/bien.js": { "maxDuration": 15 },
+    "api/mcp.js":     { "maxDuration": 30 },
+    "api/health.js":  { "maxDuration": 5  }
   },
   "routes": [
-    {
-      "src": "/v1/bien",
-      "dest": "/api/v1/bien.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/api/v1/bien.js"
-    }
+    { "src": "/health",       "dest": "/api/health.js" },
+    { "src": "/v1/bien",      "dest": "/api/v1/bien.js" },
+    { "src": "/mcp",          "dest": "/api/mcp.js" },
+    { "src": "/openapi.json", "dest": "/public/openapi.json" },
+    { "src": "/docs",         "dest": "/public/index.html" },
+    { "src": "/llms.txt",     "dest": "/llms.txt" },
+    { "src": "/(.*)",         "dest": "/api/v1/bien.js" }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET, OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "Referrer-Policy", "value": "no-referrer" },
-        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" }
+        { "key": "Access-Control-Allow-Origin",  "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, x-api-key, Authorization" },
+        { "key": "X-Content-Type-Options",       "value": "nosniff" },
+        { "key": "X-Frame-Options",              "value": "DENY" },
+        { "key": "Referrer-Policy",              "value": "no-referrer" },
+        { "key": "Strict-Transport-Security",    "value": "max-age=63072000; includeSubDomains; preload" }
       ]
     }
   ]

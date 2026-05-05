@@ -9,10 +9,12 @@
   "scripts": {
     "dev": "vercel dev",
     "start": "node api/v1/bien.js",
-    "test": "node --test tests/stats.test.js tests/zoneTendue.test.js tests/dpe.test.js tests/dvf.test.js tests/ban.test.js tests/insee.test.js tests/bien.test.js"
+    "test": "node --test tests/stats.test.js tests/zoneTendue.test.js tests/dpe.test.js tests/dvf.test.js tests/ban.test.js tests/insee.test.js tests/auth.test.js tests/health.test.js tests/bien.test.js"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.39.0"
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "vercel": "^41.0.0"

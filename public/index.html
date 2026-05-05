@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ImmoData France — Documentation API</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2a2d3a;
+      --accent: #6366f1;
+      --accent2: #10b981;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --code-bg: #12151f;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Layout ── */
+    .layout { display: flex; min-height: 100vh; }
+
+    nav {
+      width: 260px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 2rem 1.5rem;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    nav .logo { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 2rem; display: block; }
+    nav .logo span { color: var(--accent); }
+
+    nav ul { list-style: none; }
+    nav ul li { margin-bottom: .25rem; }
+    nav ul li a {
+      display: block;
+      padding: .4rem .75rem;
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: .875rem;
+      transition: all .15s;
+    }
+    nav ul li a:hover, nav ul li a.active {
+      background: rgba(99,102,241,.15);
+      color: var(--accent);
+      text-decoration: none;
+    }
+    nav .section-title {
+      font-size: .7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+      margin: 1.5rem 0 .5rem .75rem;
+    }
+
+    main {
+      flex: 1;
+      padding: 3rem 4rem;
+      max-width: 900px;
+    }
+
+    /* ── Sections ── */
+    section { margin-bottom: 4rem; scroll-margin-top: 2rem; }
+    h1 { font-size: 2rem; font-weight: 800; margin-bottom: .5rem; }
+    h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 1rem; padding-bottom: .5rem; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1rem; font-weight: 600; margin-bottom: .75rem; color: var(--muted); }
+    p  { color: var(--muted); margin-bottom: 1rem; }
+
+    /* ── Badges méthode HTTP ── */
+    .method {
+      display: inline-block;
+      padding: .2rem .6rem;
+      border-radius: 4px;
+      font-size: .75rem;
+      font-weight: 700;
+      font-family: monospace;
+      margin-right: .5rem;
+    }
+    .get  { background: rgba(16,185,129,.15); color: var(--accent2); }
+    .post { background: rgba(99,102,241,.15); color: var(--accent); }
+
+    .endpoint-header {
+      display: flex;
+      align-items: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .75rem 1rem;
+      margin-bottom: 1.5rem;
+      font-family: monospace;
+      font-size: .95rem;
+    }
+
+    /* ── Code blocks ── */
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      overflow-x: auto;
+      margin-bottom: 1.5rem;
+      font-size: .85rem;
+      line-height: 1.7;
+    }
+    code { font-family: 'Fira Code', 'Cascadia Code', monospace; }
+    p code, li code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: .15rem .4rem;
+      font-size: .85em;
+    }
+
+    /* ── Tables ── */
+    table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: .875rem; }
+    th { text-align: left; padding: .6rem 1rem; background: var(--surface); color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); }
+    td { padding: .6rem 1rem; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+    td code { color: var(--accent2); }
+    tr:last-child td { border-bottom: none; }
+
+    /* ── Cards tarifs ── */
+    .plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .plan {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+    }
+    .plan.featured { border-color: var(--accent); }
+    .plan-name  { font-weight: 700; margin-bottom: .25rem; }
+    .plan-price { font-size: 1.8rem; font-weight: 800; color: var(--accent); }
+    .plan-price span { font-size: .9rem; color: var(--muted); font-weight: 400; }
+    .plan-quota { color: var(--muted); font-size: .85rem; margin: .5rem 0 1rem; }
+    .plan ul { list-style: none; }
+    .plan ul li { font-size: .85rem; color: var(--muted); padding: .2rem 0; }
+    .plan ul li::before { content: "✓ "; color: var(--accent2); }
+
+    /* ── Alert ── */
+    .alert {
+      background: rgba(245,158,11,.08);
+      border: 1px solid rgba(245,158,11,.3);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      color: var(--warning);
+      font-size: .875rem;
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── Try it ── */
+    .try-form { display: flex; gap: .75rem; margin-bottom: 1rem; }
+    .try-form input {
+      flex: 1;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: .6rem 1rem;
+      color: var(--text);
+      font-size: .9rem;
+    }
+    .try-form input:focus { outline: none; border-color: var(--accent); }
+    .try-form button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: .6rem 1.25rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: .9rem;
+    }
+    .try-form button:hover { opacity: .9; }
+    #try-result { display: none; }
+
+    /* ── Erreur badges ── */
+    .status { display: inline-block; font-family: monospace; font-weight: 700; margin-right: .5rem; }
+    .s2xx { color: var(--accent2); }
+    .s4xx { color: var(--warning); }
+    .s5xx { color: var(--danger); }
+
+    /* ── Hero ── */
+    .hero { margin-bottom: 3rem; }
+    .hero .subtitle { font-size: 1.1rem; color: var(--muted); margin-top: .5rem; }
+    .badges { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: 1rem; }
+    .badge {
+      font-size: .75rem;
+      padding: .25rem .6rem;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .badge.green { border-color: rgba(16,185,129,.4); color: var(--accent2); }
+
+    @media (max-width: 768px) {
+      nav { display: none; }
+      main { padding: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <nav>
+    <a class="logo" href="#"><span>Immo</span>Data France</a>
+    <ul>
+      <li><a href="#intro">Introduction</a></li>
+      <li><a href="#auth">Authentification</a></li>
+    </ul>
+    <div class="section-title">Endpoints</div>
+    <ul>
+      <li><a href="#bien">GET /v1/bien</a></li>
+      <li><a href="#health">GET /health</a></li>
+      <li><a href="#mcp">POST /mcp</a></li>
+    </ul>
+    <div class="section-title">Référence</div>
+    <ul>
+      <li><a href="#response">Schéma réponse</a></li>
+      <li><a href="#errors">Codes d'erreur</a></li>
+      <li><a href="#pricing">Tarifs</a></li>
+      <li><a href="#sources">Sources</a></li>
+    </ul>
+    <div class="section-title">Intégration IA</div>
+    <ul>
+      <li><a href="#mcp-setup">Config MCP</a></li>
+      <li><a href="#openapi">OpenAPI</a></li>
+      <li><a href="#llms">llms.txt</a></li>
+    </ul>
+  </nav>
+
+  <!-- ── Main ── -->
+  <main>
+
+    <!-- Hero -->
+    <section id="intro" class="hero">
+      <h1>ImmoData France API</h1>
+      <p class="subtitle">Données immobilières françaises agrégées en temps réel pour les agents IA.</p>
+      <div class="badges">
+        <span class="badge green">BAN · DVF · DPE · INSEE</span>
+        <span class="badge">Claude Haiku</span>
+        <span class="badge">MCP compatible</span>
+        <span class="badge">OpenAPI 3.1</span>
+        <span class="badge green">Node 18+ · Vercel</span>
+      </div>
+    </section>
+
+    <!-- Auth -->
+    <section id="auth">
+      <h2>Authentification</h2>
+      <p>Toutes les requêtes (sauf <code>/health</code>) nécessitent une clé API. Passez-la dans le header <code>x-api-key</code>.</p>
+      <pre><code>curl https://immodata-france.vercel.app/v1/bien \
+  -H "x-api-key: votre_clé" \
+  --get --data-urlencode "adresse=12 rue de la Paix Lyon"</code></pre>
+      <p>Vous pouvez aussi utiliser <code>Authorization: Bearer votre_clé</code> ou le query param <code>?apikey=</code> (déconseillé — apparaît dans les logs).</p>
+    </section>
+
+    <!-- /v1/bien -->
+    <section id="bien">
+      <h2>Analyse immobilière</h2>
+      <div class="endpoint-header">
+        <span class="method get">GET</span>/v1/bien
+      </div>
+      <p>Géocode l'adresse via la BAN puis agrège DVF, DPE ADEME et INSEE en un seul JSON. Génère un résumé Claude Haiku si <code>format=ai</code>.</p>
+
+      <h3>Paramètres</h3>
+      <table>
+        <tr><th>Paramètre</th><th>Type</th><th>Requis</th><th>Description</th></tr>
+        <tr><td><code>adresse</code></td><td>string</td><td>Oui</td><td>Adresse textuelle française (5–200 caractères)</td></tr>
+        <tr><td><code>format</code></td><td>string</td><td>Non</td><td><code>ai</code> (défaut) ou <code>raw</code> (sans résumé, zéro coût LLM)</td></tr>
+      </table>
+
+      <h3>Essayez</h3>
+      <div class="try-form">
+        <input id="try-adresse" type="text" placeholder="12 rue de la Paix Lyon" value="12 rue de la Paix Lyon">
+        <button onclick="tryApi()">Envoyer</button>
+      </div>
+      <div id="try-result">
+        <pre><code id="try-output"></code></pre>
+      </div>
+
+      <h3>Exemple cURL</h3>
+      <pre><code>curl "https://immodata-france.vercel.app/v1/bien?format=raw" \
+  -H "x-api-key: votre_clé" \
+  --get --data-urlencode "adresse=12 rue de la Paix Lyon"</code></pre>
+    </section>
+
+    <!-- /health -->
+    <section id="health">
+      <h2>Santé de l'API</h2>
+      <div class="endpoint-header">
+        <span class="method get">GET</span>/health
+      </div>
+      <p>Monitoring. Pas d'authentification requise.</p>
+      <pre><code>curl https://immodata-france.vercel.app/health
+
+{
+  "status": "ok",
+  "version": "1.0.0",
+  "timestamp": "2026-05-05T10:00:00.000Z"
+}</code></pre>
+    </section>
+
+    <!-- /mcp -->
+    <section id="mcp">
+      <h2>Serveur MCP</h2>
+      <div class="endpoint-header">
+        <span class="method post">POST</span>/mcp
+      </div>
+      <p>Point d'entrée <a href="https://modelcontextprotocol.io">Model Context Protocol</a>. Expose l'outil <code>rechercher_bien</code> pour les agents Claude et tout LLM compatible MCP.</p>
+    </section>
+
+    <!-- Schéma réponse -->
+    <section id="response">
+      <h2>Schéma de réponse</h2>
+      <pre><code>{
+  "adresse_normalisee": "12 Rue de la Paix, 69001 Lyon",
+  "coordonnees":        { "lat": 45.764, "lon": 4.835 },
+  "commune":            { "nom": "Lyon", "code_insee": "69123", "population": 522969 },
+  "marche": {
+    "prix_m2_median":       4850,
+    "nb_transactions_24m":  34,
+    "tendance_12m":         "+2.1%",
+    "derniere_transaction": "2024-09"
+  },
+  "energie": {
+    "dpe_lettre":                     "D",
+    "alerte_loi_lemeur":              false,
+    "eligible_location_courte_duree": true,
+    "travaux_requis_avant":           null
+  },
+  "reglementaire": { "zone_tendue": true, "encadrement_loyers": false },
+  "ai_summary": "Le marché autour du 12 rue de la Paix affiche...",
+  "meta": {
+    "sources":      ["BAN", "DVF", "DPE-ADEME", "INSEE"],
+    "generated_at": "2026-05-05T10:00:00.000Z",
+    "rayon_metres": 500
+  }
+}</code></pre>
+
+      <h3>Champ <code>energie</code> — règles DPE</h3>
+      <table>
+        <tr><th>Classe</th><th>alerte_loi_lemeur</th><th>eligible_lcd</th><th>travaux_requis_avant</th></tr>
+        <tr><td>A / B / C</td><td>false</td><td>true</td><td>null</td></tr>
+        <tr><td>D</td><td>false</td><td>true</td><td>null</td></tr>
+        <tr><td>E</td><td>false</td><td>true</td><td>2034</td></tr>
+        <tr><td>F / G</td><td>true</td><td>false</td><td>null</td></tr>
+      </table>
+    </section>
+
+    <!-- Erreurs -->
+    <section id="errors">
+      <h2>Codes d'erreur</h2>
+      <table>
+        <tr><th>Code</th><th>Cause</th></tr>
+        <tr><td><span class="status s4xx">400</span></td><td>Paramètre <code>adresse</code> manquant, trop court (&lt;5) ou trop long (&gt;200)</td></tr>
+        <tr><td><span class="status s4xx">401</span></td><td>Header <code>x-api-key</code> manquant</td></tr>
+        <tr><td><span class="status s4xx">403</span></td><td>Clé API invalide ou expirée</td></tr>
+        <tr><td><span class="status s4xx">404</span></td><td>Adresse non trouvée dans la BAN</td></tr>
+        <tr><td><span class="status s4xx">405</span></td><td>Méthode non autorisée (utiliser GET)</td></tr>
+        <tr><td><span class="status s4xx">429</span></td><td>Rate limit dépassé — 100 req/min par IP</td></tr>
+        <tr><td><span class="status s5xx">503</span></td><td>Timeout global 10s — sources de données lentes</td></tr>
+        <tr><td><span class="status s5xx">500</span></td><td>Erreur interne inattendue</td></tr>
+      </table>
+    </section>
+
+    <!-- Tarifs -->
+    <section id="pricing">
+      <h2>Tarifs</h2>
+      <div class="plans">
+        <div class="plan">
+          <div class="plan-name">Free</div>
+          <div class="plan-price">0€</div>
+          <div class="plan-quota">50 req / mois</div>
+          <ul><li>format raw uniquement</li><li>Support communauté</li></ul>
+        </div>
+        <div class="plan featured">
+          <div class="plan-name">Starter</div>
+          <div class="plan-price">19€<span>/mois</span></div>
+          <div class="plan-quota">1 000 req / mois</div>
+          <ul><li>format ai inclus</li><li>Support email</li></ul>
+        </div>
+        <div class="plan">
+          <div class="plan-name">Pro</div>
+          <div class="plan-price">79€<span>/mois</span></div>
+          <div class="plan-quota">10 000 req / mois</div>
+          <ul><li>format ai inclus</li><li>Support prioritaire</li><li>MCP inclus</li></ul>
+        </div>
+        <div class="plan">
+          <div class="plan-name">Enterprise</div>
+          <div class="plan-price" style="font-size:1.2rem; padding-top:.3rem">Sur devis</div>
+          <div class="plan-quota">Volume illimité</div>
+          <ul><li>SLA garanti</li><li>Onboarding dédié</li></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sources -->
+    <section id="sources">
+      <h2>Sources de données</h2>
+      <table>
+        <tr><th>Source</th><th>Organisme</th><th>Données</th><th>MAJ</th></tr>
+        <tr><td>BAN</td><td>IGN / Etalab</td><td>Géocodage adresses</td><td>Temps réel</td></tr>
+        <tr><td>DVF</td><td>DGFiP / Etalab</td><td>Transactions immobilières</td><td>Trimestrielle</td></tr>
+        <tr><td>DPE ADEME</td><td>ADEME</td><td>Diagnostics énergétiques</td><td>Continue</td></tr>
+        <tr><td>INSEE Géo</td><td>INSEE</td><td>Communes, population</td><td>Annuelle</td></tr>
+      </table>
+      <p>Toutes les sources sont gratuites et ouvertes (Licence Ouverte v2.0 / ODbL).</p>
+    </section>
+
+    <!-- MCP Setup -->
+    <section id="mcp-setup">
+      <h2>Configuration MCP pour Claude</h2>
+      <p>Ajoutez ce bloc dans votre configuration Claude Code (<code>~/.claude/claude.json</code> ou paramètres MCP) :</p>
+      <pre><code>{
+  "mcpServers": {
+    "immodata": {
+      "type": "http",
+      "url": "https://immodata-france.vercel.app/mcp",
+      "headers": {
+        "x-api-key": "votre_clé"
+      }
+    }
+  }
+}</code></pre>
+      <p>L'outil <code>rechercher_bien</code> sera alors disponible dans toutes vos conversations Claude.</p>
+    </section>
+
+    <!-- OpenAPI -->
+    <section id="openapi">
+      <h2>Spec OpenAPI</h2>
+      <p>Spécification complète disponible à <a href="/openapi.json">/openapi.json</a> (OpenAPI 3.1).</p>
+      <p>Compatible Swagger UI, Postman, Insomnia, et la plupart des générateurs de clients.</p>
+    </section>
+
+    <!-- llms.txt -->
+    <section id="llms">
+      <h2>llms.txt</h2>
+      <p>Fichier d'indexation pour les LLMs disponible à <a href="/llms.txt">/llms.txt</a>. Utilisé par les crawlers IA pour découvrir et documenter l'API automatiquement.</p>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  async function tryApi() {
+    const adresse = document.getElementById('try-adresse').value.trim();
+    const output  = document.getElementById('try-output');
+    const result  = document.getElementById('try-result');
+
+    if (!adresse) return;
+
+    output.textContent = 'Chargement…';
+    result.style.display = 'block';
+
+    try {
+      const url = `/v1/bien?format=raw&adresse=${encodeURIComponent(adresse)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      output.textContent = JSON.stringify(data, null, 2);
+    } catch (e) {
+      output.textContent = 'Erreur : ' + e.message;
+    }
+  }
+
+  // Highlight nav on scroll
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks  = document.querySelectorAll('nav a[href^="#"]');
+  const observer  = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        navLinks.forEach(l => l.classList.remove('active'));
+        const link = document.querySelector(`nav a[href="#${e.target.id}"]`);
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

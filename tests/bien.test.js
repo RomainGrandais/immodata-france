@@ -163,12 +163,13 @@ describe('handler bien.js', () => {
     assert.equal(res._headers['Referrer-Policy'], 'no-referrer');
   });
 
-  it('Authorization absent de Access-Control-Allow-Headers', async () => {
+  it('Access-Control-Allow-Headers contient x-api-key et Authorization', async () => {
     const req = createReq({ method: 'OPTIONS' });
     const res = createRes();
     await handler(req, res);
-    const allowHeaders = res._headers['Access-Control-Allow-Headers'] || '';
-    assert.ok(!allowHeaders.toLowerCase().includes('authorization'), 'Authorization ne doit pas être exposé');
+    const allowHeaders = (res._headers['Access-Control-Allow-Headers'] || '').toLowerCase();
+    assert.ok(allowHeaders.includes('x-api-key'), 'x-api-key doit être autorisé');
+    assert.ok(allowHeaders.includes('authorization'), 'Authorization Bearer doit être autorisé');
   });
 
   it('x-forwarded-for trop long (> 45 chars) → fallback sur socket', async () => {

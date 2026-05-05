@@ -1,0 +1,172 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "ImmoData France API",
+    "version": "1.0.0",
+    "description": "API REST agrégeant en temps réel les données immobilières publiques françaises (BAN, DVF, DPE ADEME, INSEE) avec résumé Claude Haiku. Conçue pour les agents IA et les investisseurs.",
+    "contact": { "url": "https://immodata-france.vercel.app/docs" },
+    "license": { "name": "MIT" }
+  },
+  "servers": [
+    { "url": "https://immodata-france.vercel.app", "description": "Production" }
+  ],
+  "security": [{ "apiKey": [] }],
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Clé API obtenue sur immodata-france.vercel.app/docs"
+      }
+    },
+    "schemas": {
+      "Coordonnees": {
+        "type": "object",
+        "properties": {
+          "lat": { "type": "number", "example": 45.764 },
+          "lon": { "type": "number", "example": 4.835 }
+        }
+      },
+      "Commune": {
+        "type": "object",
+        "properties": {
+          "nom":        { "type": "string",  "example": "Lyon" },
+          "code_insee": { "type": "string",  "example": "69123" },
+          "population": { "type": ["integer","null"], "example": 522969 }
+        }
+      },
+      "Marche": {
+        "type": "object",
+        "properties": {
+          "prix_m2_median":       { "type": ["integer","null"], "example": 4850 },
+          "nb_transactions_24m":  { "type": "integer",          "example": 34 },
+          "tendance_12m":         { "type": ["string","null"],  "example": "+2.1%" },
+          "derniere_transaction": { "type": ["string","null"],  "example": "2024-09" },
+          "message":              { "type": "string",           "description": "Présent uniquement si données insuffisantes" }
+        }
+      },
+      "Energie": {
+        "type": ["object","null"],
+        "properties": {
+          "dpe_lettre":                    { "type": "string", "enum": ["A","B","C","D","E","F","G"] },
+          "alerte_loi_lemeur":             { "type": "boolean" },
+          "eligible_location_courte_duree":{ "type": "boolean" },
+          "travaux_requis_avant":          { "type": ["string","null"], "example": "2034" }
+        }
+      },
+      "Reglementaire": {
+        "type": "object",
+        "properties": {
+          "zone_tendue":        { "type": "boolean" },
+          "encadrement_loyers": { "type": "boolean" }
+        }
+      },
+      "Meta": {
+        "type": "object",
+        "properties": {
+          "sources":       { "type": "array", "items": { "type": "string" } },
+          "generated_at":  { "type": "string", "format": "date-time" },
+          "rayon_metres":  { "type": "integer", "example": 500 },
+          "warnings":      { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "BienResponse": {
+        "type": "object",
+        "required": ["adresse_normalisee","coordonnees","commune","marche","reglementaire","meta"],
+        "properties": {
+          "adresse_normalisee": { "type": "string",      "example": "12 Rue de la Paix, 69001 Lyon" },
+          "coordonnees":        { "$ref": "#/components/schemas/Coordonnees" },
+          "commune":            { "$ref": "#/components/schemas/Commune" },
+          "marche":             { "$ref": "#/components/schemas/Marche" },
+          "energie":            { "$ref": "#/components/schemas/Energie" },
+          "reglementaire":      { "$ref": "#/components/schemas/Reglementaire" },
+          "ai_summary":         { "type": "string", "description": "Absent si format=raw" },
+          "meta":               { "$ref": "#/components/schemas/Meta" }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status":    { "type": "string", "example": "ok" },
+          "version":   { "type": "string", "example": "1.0.0" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" },
+          "docs":  { "type": "string" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/v1/bien": {
+      "get": {
+        "summary": "Analyse immobilière d'une adresse",
+        "description": "Géocode l'adresse via la BAN, puis agrège prix DVF, DPE ADEME, données INSEE et statut zone tendue. Génère un résumé Claude Haiku si format=ai.",
+        "operationId": "getBien",
+        "parameters": [
+          {
+            "name": "adresse",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "minLength": 5, "maxLength": 200 },
+            "description": "Adresse textuelle française complète",
+            "example": "12 rue de la Paix Lyon"
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "enum": ["ai","raw"], "default": "ai" },
+            "description": "ai = inclut résumé Claude Haiku (défaut). raw = données brutes uniquement, zéro coût LLM."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Fiche immobilière complète",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BienResponse" } } }
+          },
+          "400": { "description": "Paramètre adresse manquant ou invalide",  "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Clé API manquante",                         "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "403": { "description": "Clé API invalide",                           "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Adresse non trouvée dans la BAN",            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "429": { "description": "Rate limit dépassé (100 req/min par IP)",    "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "503": { "description": "Timeout global (10s)",                       "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "500": { "description": "Erreur interne",                             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Santé de l'API",
+        "description": "Endpoint de monitoring, sans authentification.",
+        "operationId": "getHealth",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "API opérationnelle",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HealthResponse" } } }
+          }
+        }
+      }
+    },
+    "/mcp": {
+      "post": {
+        "summary": "Serveur MCP (Model Context Protocol)",
+        "description": "Point d'entrée pour les agents IA compatibles MCP. Expose l'outil rechercher_bien.",
+        "operationId": "postMcp",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "description": "Message JSON-RPC 2.0 MCP" } } }
+        },
+        "responses": {
+          "200": { "description": "Réponse JSON-RPC MCP" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,98 @@
+# ImmoData France API
+
+> API REST qui agrège en temps réel les données immobilières publiques françaises (BAN, DVF, DPE ADEME, INSEE) et génère un résumé contextuel via Claude Haiku. Conçue pour les agents IA, les LLMs et les pipelines RAG.
+
+## Utilisation
+
+Envoyez une adresse française complète, recevez une fiche JSON enrichie avec prix au m², DPE, zone tendue et résumé en langage naturel.
+
+Authentification : header `x-api-key: <votre_clé>` requis sur tous les endpoints sauf `/health`.
+
+## Endpoints
+
+### GET /v1/bien
+
+Analyse immobilière complète d'une adresse française.
+
+Paramètres :
+- `adresse` (requis) : adresse textuelle complète, ex: `12 rue de la Paix Lyon`
+- `format` (optionnel) : `ai` (défaut, inclut résumé Claude) ou `raw` (données brutes, pas d'appel LLM)
+
+Exemple :
+```
+GET /v1/bien?adresse=12%20rue%20de%20la%20Paix%20Lyon
+x-api-key: votre_clé
+```
+
+Réponse (format ai) :
+```json
+{
+  "adresse_normalisee": "12 Rue de la Paix, 69001 Lyon",
+  "coordonnees": { "lat": 45.764, "lon": 4.835 },
+  "commune": { "nom": "Lyon", "code_insee": "69123", "population": 522969 },
+  "marche": {
+    "prix_m2_median": 4850,
+    "nb_transactions_24m": 34,
+    "tendance_12m": "+2.1%",
+    "derniere_transaction": "2024-09"
+  },
+  "energie": {
+    "dpe_lettre": "D",
+    "alerte_loi_lemeur": false,
+    "eligible_location_courte_duree": true,
+    "travaux_requis_avant": null
+  },
+  "reglementaire": { "zone_tendue": true, "encadrement_loyers": false },
+  "ai_summary": "Résumé en langage naturel généré par Claude Haiku...",
+  "meta": { "sources": ["BAN","DVF","DPE-ADEME","INSEE"], "generated_at": "...", "rayon_metres": 500 }
+}
+```
+
+### GET /health
+
+Vérifie la disponibilité de l'API. Pas d'authentification requise.
+
+Réponse : `{ "status": "ok", "version": "1.0.0", "timestamp": "..." }`
+
+### POST /mcp
+
+Serveur MCP (Model Context Protocol) — permet aux agents Claude et autres LLMs compatibles de brancher l'API directement comme outil. Voir `/docs` pour la configuration.
+
+### GET /openapi.json
+
+Spécification OpenAPI 3.1 complète de l'API.
+
+### GET /docs
+
+Page de documentation interactive.
+
+## Sources de données
+
+- BAN (Base Adresse Nationale) — IGN/Etalab — géocodage temps réel
+- DVF (Demandes de Valeurs Foncières) — DGFiP/Etalab — transactions immobilières, mise à jour trimestrielle
+- DPE ADEME — diagnostics énergétiques, mise à jour continue
+- INSEE Géo API — données communes, mise à jour annuelle
+
+Toutes les sources sont gratuites et ouvertes. Aucune authentification requise côté sources.
+
+## Intégration dans un agent IA
+
+Le champ `ai_summary` est prêt à l'emploi comme contexte pour un LLM :
+
+```
+Système : Tu es un conseiller immobilier. Pour chaque bien, tu reçois une fiche JSON
+avec un champ "ai_summary". Utilise ce résumé comme contexte de marché pour répondre.
+```
+
+Via MCP, configurez le serveur à l'URL `https://immodata-france.vercel.app/mcp` pour
+accéder directement à l'outil `rechercher_bien` depuis Claude ou tout agent compatible MCP.
+
+## Codes d'erreur
+
+- 400 : paramètre adresse manquant ou hors limites (5–200 caractères)
+- 401 : clé API manquante
+- 403 : clé API invalide
+- 404 : adresse non trouvée dans la BAN
+- 429 : rate limit dépassé (100 req/min par IP)
+- 503 : timeout global (10s)
+- 500 : erreur interne
