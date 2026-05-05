@@ -1,0 +1,21 @@
+# Secrets — ne jamais committer
+.env
+.env.local
+.env.*.local
+
+# Dépendances
+node_modules/
+
+# Vercel
+.vercel/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Claude Code (config locale — propre à la machine)
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db

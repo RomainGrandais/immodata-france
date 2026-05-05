@@ -1,0 +1,21 @@
+{
+  "name": "immodata-france",
+  "version": "1.0.0",
+  "description": "API REST qui agrège des données immobilières publiques françaises pour les agents IA",
+  "main": "api/v1/bien.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "node api/v1/bien.js",
+    "test": "node --test tests/stats.test.js tests/zoneTendue.test.js tests/dpe.test.js tests/dvf.test.js tests/ban.test.js tests/insee.test.js tests/bien.test.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0"
+  },
+  "devDependencies": {
+    "vercel": "^41.0.0"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "functions": {
+    "api/v1/bien.js": {
+      "maxDuration": 15
+    }
+  },
+  "routes": [
+    {
+      "src": "/v1/bien",
+      "dest": "/api/v1/bien.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/v1/bien.js"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Referrer-Policy", "value": "no-referrer" },
+        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" }
+      ]
+    }
+  ]
+}
