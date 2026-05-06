@@ -1,9 +1,12 @@
 {
   "version": 2,
   "functions": {
-    "api/v1/bien.js":         { "maxDuration": 15 },
-    "api/mcp.js":             { "maxDuration": 30 },
-    "api/health.js":          { "maxDuration": 5  },
+    "api/v1/bien.js":           { "maxDuration": 15 },
+    "api/v1/valuation.js":     { "maxDuration": 15 },
+    "api/v1/rental-yield.js":  { "maxDuration": 15 },
+    "api/v1/market-trends.js": { "maxDuration": 15 },
+    "api/mcp.js":              { "maxDuration": 30 },
+    "api/health.js":           { "maxDuration": 5  },
     "api/auth/register.js":   { "maxDuration": 10 },
     "api/auth/login.js":      { "maxDuration": 10 },
     "api/auth/me.js":         { "maxDuration": 10 },
@@ -16,6 +19,9 @@
   "routes": [
     { "src": "/health",                 "dest": "/api/health.js" },
     { "src": "/v1/bien",                "dest": "/api/v1/bien.js" },
+    { "src": "/v1/valuation",           "dest": "/api/v1/valuation.js" },
+    { "src": "/v1/rental-yield",        "dest": "/api/v1/rental-yield.js" },
+    { "src": "/v1/market-trends",       "dest": "/api/v1/market-trends.js" },
     { "src": "/mcp",                    "dest": "/api/mcp.js" },
     { "src": "/api/auth/register",      "dest": "/api/auth/register.js" },
     { "src": "/api/auth/login",         "dest": "/api/auth/login.js" },
